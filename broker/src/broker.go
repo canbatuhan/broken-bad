@@ -14,7 +14,7 @@ type MessageBroker interface {
 	SendResponse(*net.UDPAddr, [][]byte)       // Sends response to a client
 }
 
-func (server Server) ReceiveRequest() (Request, *net.UDPAddr) {
+func (server *Server) ReceiveRequest() (Request, *net.UDPAddr) {
 	messageBuffer := make([]byte, 2048)
 	messageLength, clientAddr, err := server.udpConnection.ReadFromUDP(messageBuffer)
 
@@ -27,10 +27,11 @@ func (server Server) ReceiveRequest() (Request, *net.UDPAddr) {
 	clientPort := clientAddr.Port
 	message := messageBuffer[:messageLength]
 	request := Request{Client{clientHost, clientPort}, message}
+	ServerLog("A requested is received from " + clientAddr.String())
 	return request, clientAddr
 }
 
-func (server Server) ProcessRequest(request Request) ([]Task, [][]byte) {
+func (server *Server) ProcessRequest(request Request) ([]Task, [][]byte) {
 	decodedRequest := string(request.message)
 	taskStringArr := strings.Split(decodedRequest, "$")
 	taskArr := make([]Task, 0)
@@ -49,20 +50,21 @@ func (server Server) ProcessRequest(request Request) ([]Task, [][]byte) {
 	return taskArr, ackArr
 }
 
-func (server Server) SendTask(task Task) {
+func (server *Server) SendTask(task Task) {
 	for _, service := range server.services {
 		if service.name == task.taskType {
 			service.udpConnection.Write(task.data)
 			break
 		}
 	}
+	ServerLog("A task is send to Service:" + task.taskType)
 }
 
-func (server Server) ReceiveAck(task Task) []byte {
+func (server *Server) ReceiveAck(task Task) []byte {
 	var acknowledgment []byte
 	for _, service := range server.services {
 		if service.name == task.taskType {
-			ackBuffer := make([]byte, 1024)
+			ackBuffer := make([]byte, 2048)
 			ackLength, err := service.udpConnection.Read(ackBuffer)
 			if err != nil {
 				ServerLog("Error during receiving acknowledgement: " + err.Error())
@@ -72,12 +74,13 @@ func (server Server) ReceiveAck(task Task) []byte {
 			break
 		}
 	}
+	ServerLog("Acknowledgment received from a service")
 	return acknowledgment
 }
 
-func (server Server) SendResponse(udpAddres *net.UDPAddr, ackArr [][]byte) {
-	address := net.UDPAddr{IP: net.ParseIP(server.host), Port: server.port}
+func (server *Server) SendResponse(udpAddres *net.UDPAddr, ackArr [][]byte) {
 	for _, acknowledgment := range ackArr {
-		server.udpConnection.WriteToUDP(acknowledgment, &address)
+		server.udpConnection.WriteToUDP(acknowledgment, udpAddres)
 	}
+	ServerLog("Responsed to " + udpAddres.String())
 }

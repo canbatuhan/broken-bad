@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -48,7 +47,7 @@ type Service struct {
 	name          string
 	host          string
 	port          int
-	udpConnection net.Conn
+	udpConnection *net.UDPConn
 }
 
 func InitService(name string, host string, port int) Service {
@@ -84,6 +83,7 @@ func InitServer(connectionType string, host string, port int) Server {
 
 	server.udpConnection = connection
 	server.services = make([]Service, 0)
+	ServerLog("Started")
 	return server
 }
 
@@ -93,15 +93,15 @@ func ServerLog(message string) {
 }
 
 func AddService(server *Server, service Service) {
-	server.services = append(server.services, service)
-	addr := service.host + ":" + strconv.Itoa(service.port)
-	fmt.Println(addr)
-	connection, err := net.Dial(server.connectionType, addr)
+	dialerAddress := net.UDPAddr{IP: net.ParseIP(service.host), Port: service.port}
+	connection, err := net.DialUDP(server.connectionType, nil, &dialerAddress)
 
 	if err != nil {
 		ServerLog("Error occured during connecting to a service: " + err.Error())
 		os.Exit(1)
 	}
 
+	ServerLog("UDP Connection is made with Service: " + service.name + " on " + dialerAddress.String())
 	service.udpConnection = connection
+	server.services = append(server.services, service)
 }

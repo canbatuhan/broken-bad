@@ -1,6 +1,9 @@
 package main
 
-import broker "broker/src"
+import (
+	broker "broker/src"
+	"time"
+)
 
 func Setup() broker.Server {
 	server := broker.InitServer("udp", "127.0.0.1", 8000)
@@ -21,11 +24,12 @@ func Run(mb broker.MessageBroker) {
 			}(task, ackArr, idx)
 		}
 
+		time.Sleep(1 * time.Second)
 		mb.SendResponse(clientConnection, ackArr)
 	}
 }
 
 func main() {
 	server := Setup()
-	Run(server)
+	Run(&server)
 }
