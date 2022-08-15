@@ -3,15 +3,15 @@ package main
 import broker "broker/src"
 
 func Setup() broker.Server {
-	server := broker.InitServer("tcp", "localhost", "8000")
-	broker.AddService(&server, broker.InitService("A", "localhost", "8010"))
-	broker.AddService(&server, broker.InitService("B", "localhost", "8020"))
+	server := broker.InitServer("udp", "127.0.0.1", 8000)
+	broker.AddService(&server, broker.InitService("A", "127.0.0.1", 8010))
+	broker.AddService(&server, broker.InitService("B", "127.0.0.1", 8020))
 	return server
 }
 
 func Run(mb broker.MessageBroker) {
 	for {
-		request, connection := mb.ReceiveRequest()
+		request, clientConnection := mb.ReceiveRequest()
 		taskArr, ackArr := mb.ProcessRequest(request)
 
 		for idx, task := range taskArr {
@@ -21,7 +21,7 @@ func Run(mb broker.MessageBroker) {
 			}(task, ackArr, idx)
 		}
 
-		mb.SendResponse(connection, ackArr)
+		mb.SendResponse(clientConnection, ackArr)
 	}
 }
 

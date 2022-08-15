@@ -7,34 +7,27 @@ import (
 )
 
 type MessageBroker interface {
-	ReceiveRequest() (Request, net.Conn)       // Receives request from a client
+	ReceiveRequest() (Request, *net.UDPAddr)   // Receives request from a client
 	ProcessRequest(Request) ([]Task, [][]byte) // Processes raw request
 	SendTask(Task)                             // Sends task to a service
 	ReceiveAck(Task) []byte                    // Receives acknowledgment from a service
-	SendResponse(net.Conn, [][]byte)           // Sends response to a client
+	SendResponse(*net.UDPAddr, [][]byte)       // Sends response to a client
 }
 
-func (server Server) ReceiveRequest() (Request, net.Conn) {
-	connection, err := server.listener.Accept()
-
-	if err != nil {
-		ServerLog("Error occured during establishing a connection: " + err.Error())
-		return Request{}, nil
-	}
-
-	messageBuffer := make([]byte, 1024)
-	messageLength, err := connection.Read(messageBuffer)
+func (server Server) ReceiveRequest() (Request, *net.UDPAddr) {
+	messageBuffer := make([]byte, 2048)
+	messageLength, clientAddr, err := server.udpConnection.ReadFromUDP(messageBuffer)
 
 	if err != nil {
 		ServerLog("Error occured during receiving a request: " + err.Error())
 		return Request{}, nil
 	}
 
-	clientHost := strings.Split(connection.LocalAddr().String(), ":")[0]
-	clientPort := strings.Split(connection.LocalAddr().String(), ":")[1]
+	clientHost := clientAddr.IP.String()
+	clientPort := clientAddr.Port
 	message := messageBuffer[:messageLength]
 	request := Request{Client{clientHost, clientPort}, message}
-	return request, connection
+	return request, clientAddr
 }
 
 func (server Server) ProcessRequest(request Request) ([]Task, [][]byte) {
@@ -59,7 +52,7 @@ func (server Server) ProcessRequest(request Request) ([]Task, [][]byte) {
 func (server Server) SendTask(task Task) {
 	for _, service := range server.services {
 		if service.name == task.taskType {
-			service.connection.Write(task.data)
+			service.udpConnection.Write(task.data)
 			break
 		}
 	}
@@ -70,7 +63,7 @@ func (server Server) ReceiveAck(task Task) []byte {
 	for _, service := range server.services {
 		if service.name == task.taskType {
 			ackBuffer := make([]byte, 1024)
-			ackLength, err := service.connection.Read(ackBuffer)
+			ackLength, err := service.udpConnection.Read(ackBuffer)
 			if err != nil {
 				ServerLog("Error during receiving acknowledgement: " + err.Error())
 				os.Exit(1)
@@ -82,9 +75,9 @@ func (server Server) ReceiveAck(task Task) []byte {
 	return acknowledgment
 }
 
-func (server Server) SendResponse(connection net.Conn, ackArr [][]byte) {
+func (server Server) SendResponse(udpAddres *net.UDPAddr, ackArr [][]byte) {
+	address := net.UDPAddr{IP: net.ParseIP(server.host), Port: server.port}
 	for _, acknowledgment := range ackArr {
-		connection.Write(acknowledgment)
+		server.udpConnection.WriteToUDP(acknowledgment, &address)
 	}
-	connection.Close()
 }
