@@ -1,4 +1,4 @@
-package server
+package src
 
 import (
 	"net"
@@ -7,26 +7,27 @@ import (
 )
 
 type MessageBroker interface {
-	ReceiveRequest() (Request, net.Conn) // Receives request from a client
-	ProcessRequest(Request) []Task       // Processes raw request
-	SendTask(Task)                       // Sends task to a service
-	ReceiveAck(Task) []byte              // Receives acknowledgment from a service
-	SendResponse(net.Conn, []byte)       // Sends response to a client
+	ReceiveRequest() (Request, net.Conn)       // Receives request from a client
+	ProcessRequest(Request) ([]Task, [][]byte) // Processes raw request
+	SendTask(Task)                             // Sends task to a service
+	ReceiveAck(Task) []byte                    // Receives acknowledgment from a service
+	SendResponse(net.Conn, [][]byte)           // Sends response to a client
 }
 
 func (server Server) ReceiveRequest() (Request, net.Conn) {
 	connection, err := server.listener.Accept()
 
 	if err != nil {
-		ServerLog("Error occured during connecting: " + err.Error())
-		os.Exit(1)
+		ServerLog("Error occured during establishing a connection: " + err.Error())
+		return Request{}, nil
 	}
 
-	messageBuffer := make([]byte, BUFFER_SIZE)
+	messageBuffer := make([]byte, 1024)
 	messageLength, err := connection.Read(messageBuffer)
 
 	if err != nil {
-		ServerLog("Error occured during reading: " + err.Error())
+		ServerLog("Error occured during receiving a request: " + err.Error())
+		return Request{}, nil
 	}
 
 	clientHost := strings.Split(connection.LocalAddr().String(), ":")[0]
@@ -36,7 +37,7 @@ func (server Server) ReceiveRequest() (Request, net.Conn) {
 	return request, connection
 }
 
-func (server Server) ProcessRequest(request Request) []Task {
+func (server Server) ProcessRequest(request Request) ([]Task, [][]byte) {
 	decodedRequest := string(request.message)
 	taskStringArr := strings.Split(decodedRequest, "$")
 	taskArr := make([]Task, 0)
@@ -47,7 +48,12 @@ func (server Server) ProcessRequest(request Request) []Task {
 		taskArr = append(taskArr, Task{taskType, taskData})
 	}
 
-	return taskArr
+	ackArr := make([][]byte, len(taskStringArr))
+	for idx := range ackArr {
+		ackArr[idx] = make([]byte, 0)
+	}
+
+	return taskArr, ackArr
 }
 
 func (server Server) SendTask(task Task) {
@@ -63,10 +69,10 @@ func (server Server) ReceiveAck(task Task) []byte {
 	var acknowledgment []byte
 	for _, service := range server.services {
 		if service.name == task.taskType {
-			ackBuffer := make([]byte, BUFFER_SIZE)
+			ackBuffer := make([]byte, 1024)
 			ackLength, err := service.connection.Read(ackBuffer)
 			if err != nil {
-				ServerLog("Error while receiving acknowledgement: " + err.Error())
+				ServerLog("Error during receiving acknowledgement: " + err.Error())
 				os.Exit(1)
 			}
 			acknowledgment = ackBuffer[:ackLength]
@@ -76,7 +82,9 @@ func (server Server) ReceiveAck(task Task) []byte {
 	return acknowledgment
 }
 
-func (server Server) SendResponse(connection net.Conn, acknowledgment []byte) {
-	connection.Write(acknowledgment)
+func (server Server) SendResponse(connection net.Conn, ackArr [][]byte) {
+	for _, acknowledgment := range ackArr {
+		connection.Write(acknowledgment)
+	}
 	connection.Close()
 }
