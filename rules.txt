@@ -1,13 +1,13 @@
-ADRESS RULES
-
 Broker:
-    host: localhost
+    host: 127.0.0.1
     port: 8000
 
 Service(s):
-    host: localhost
+    host: 127.0.0.1
     port: 80x0
 
 Client(s):
-    host: localhost
+    host: 127.0.0.1
     port: 90x0
+    
+Seperator: "$"
