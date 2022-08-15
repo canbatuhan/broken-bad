@@ -4,7 +4,7 @@ Broker:
     host: localhost
     port: 8000
 
-Server(s):
+Service(s):
     host: localhost
     port: 80x0
 
