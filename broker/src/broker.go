@@ -15,7 +15,7 @@ type MessageBroker interface {
 }
 
 func (server *Server) ReceiveRequest() (Request, *net.UDPAddr) {
-	messageBuffer := make([]byte, 2048)
+	messageBuffer := make([]byte, BUFFER_SIZE)
 	messageLength, clientAddr, err := server.udpConnection.ReadFromUDP(messageBuffer)
 
 	if err != nil {
@@ -33,12 +33,12 @@ func (server *Server) ReceiveRequest() (Request, *net.UDPAddr) {
 
 func (server *Server) ProcessRequest(request Request) ([]Task, [][]byte) {
 	decodedRequest := string(request.message)
-	taskStringArr := strings.Split(decodedRequest, "$")
+	taskStringArr := strings.Split(decodedRequest, TASK_SEPERATOR)
 	taskArr := make([]Task, 0)
 
 	for _, taskString := range taskStringArr {
-		taskType := strings.Split(taskString, ":")[0]
-		taskData := []byte(strings.Split(taskString, ":")[1])
+		taskType := strings.Split(taskString, HEAD_BODY_SEPERATOR)[0]
+		taskData := []byte(strings.Split(taskString, HEAD_BODY_SEPERATOR)[1])
 		taskArr = append(taskArr, Task{taskType, taskData})
 	}
 
@@ -64,7 +64,7 @@ func (server *Server) ReceiveAck(task Task) []byte {
 	var acknowledgment []byte
 	for _, service := range server.services {
 		if service.name == task.taskType {
-			ackBuffer := make([]byte, 2048)
+			ackBuffer := make([]byte, BUFFER_SIZE)
 			ackLength, err := service.udpConnection.Read(ackBuffer)
 			if err != nil {
 				ServerLog("Error during receiving acknowledgement: " + err.Error())

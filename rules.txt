@@ -1,3 +1,5 @@
+ADDRESS RULES
+
 Broker:
     host: 127.0.0.1
     port: 8000
@@ -9,5 +11,12 @@ Service(s):
 Client(s):
     host: 127.0.0.1
     port: 90x0
-    
-Seperator: "$"
+
+---------------------------
+
+SEPERATOR RULES:
+
+    Task: "$"
+    Head-Body: ":"
+    Content: ";"
+

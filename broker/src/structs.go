@@ -60,21 +60,19 @@ func InitService(name string, host string, port int) Service {
 }
 
 type Server struct {
-	host           string
-	port           int
-	connectionType string
-	udpConnection  *net.UDPConn
-	services       []Service
+	host          string
+	port          int
+	udpConnection *net.UDPConn
+	services      []Service
 }
 
-func InitServer(connectionType string, host string, port int) Server {
+func InitServer(host string, port int) Server {
 	var server Server
 	server.host = host
 	server.port = port
-	server.connectionType = connectionType
 
 	address := net.UDPAddr{IP: net.ParseIP(server.host), Port: server.port}
-	connection, err := net.ListenUDP(server.connectionType, &address)
+	connection, err := net.ListenUDP(CONNECTION_TYPE, &address)
 
 	if err != nil {
 		ServerLog("Error occured during starting: " + err.Error())
@@ -93,15 +91,15 @@ func ServerLog(message string) {
 }
 
 func AddService(server *Server, service Service) {
-	dialerAddress := net.UDPAddr{IP: net.ParseIP(service.host), Port: service.port}
-	connection, err := net.DialUDP(server.connectionType, nil, &dialerAddress)
+	listenerAddress := net.UDPAddr{IP: net.ParseIP(service.host), Port: service.port}
+	connection, err := net.DialUDP(CONNECTION_TYPE, nil, &listenerAddress)
 
 	if err != nil {
 		ServerLog("Error occured during connecting to a service: " + err.Error())
 		os.Exit(1)
 	}
 
-	ServerLog("UDP Connection is made with Service: " + service.name + " on " + dialerAddress.String())
+	ServerLog("UDP Connection is made with Service: " + service.name + " on " + listenerAddress.String())
 	service.udpConnection = connection
 	server.services = append(server.services, service)
 }

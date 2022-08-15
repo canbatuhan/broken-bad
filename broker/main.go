@@ -6,7 +6,7 @@ import (
 )
 
 func Setup() broker.Server {
-	server := broker.InitServer("udp", "127.0.0.1", 8000)
+	server := broker.InitServer("127.0.0.1", 8000)
 	broker.AddService(&server, broker.InitService("A", "127.0.0.1", 8010))
 	broker.AddService(&server, broker.InitService("B", "127.0.0.1", 8020))
 	return server
