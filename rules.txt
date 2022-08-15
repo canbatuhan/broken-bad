@@ -1,0 +1,13 @@
+ADRESS RULES
+
+Broker:
+    host: localhost
+    port: 8000
+
+Server(s):
+    host: localhost
+    port: 80x0
+
+Client(s):
+    host: localhost
+    port: 90x0
