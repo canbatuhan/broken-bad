@@ -2,7 +2,8 @@ package main
 
 import (
 	broker "broker/src"
-	"time"
+	"fmt"
+	"sync"
 )
 
 func Setup() broker.Server {
@@ -17,14 +18,18 @@ func Run(mb broker.MessageBroker) {
 		request, clientConnection := mb.ReceiveRequest()
 		taskArr, ackArr := mb.ProcessRequest(request)
 
+		var taskGroup sync.WaitGroup
 		for idx, task := range taskArr {
-			go func(task broker.Task, ackArr [][]byte, idx int) {
+			taskGroup.Add(1)
+			go func(taskGroup *sync.WaitGroup, task broker.Task, ackArr [][]byte, idx int) {
 				mb.SendTask(task)
 				ackArr[idx] = mb.ReceiveAck(task)
-			}(task, ackArr, idx)
+				fmt.Print("Single ACK received")
+				taskGroup.Done()
+			}(&taskGroup, task, ackArr, idx)
 		}
 
-		time.Sleep(1 * time.Second)
+		taskGroup.Wait()
 		mb.SendResponse(clientConnection, ackArr)
 	}
 }

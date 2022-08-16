@@ -27,7 +27,7 @@ func (server *Server) ReceiveRequest() (Request, *net.UDPAddr) {
 	clientPort := clientAddr.Port
 	message := messageBuffer[:messageLength]
 	request := Request{Client{clientHost, clientPort}, message}
-	ServerLog("A requested is received from " + clientAddr.String())
+	ServerLog("Request received from " + clientAddr.String())
 	return request, clientAddr
 }
 
@@ -57,7 +57,7 @@ func (server *Server) SendTask(task Task) {
 			break
 		}
 	}
-	ServerLog("A task is send to Service:" + task.taskType)
+	ServerLog("Task sent to Service:" + task.taskType)
 }
 
 func (server *Server) ReceiveAck(task Task) []byte {

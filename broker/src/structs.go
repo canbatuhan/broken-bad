@@ -99,7 +99,7 @@ func AddService(server *Server, service Service) {
 		os.Exit(1)
 	}
 
-	ServerLog("UDP Connection is made with Service: " + service.name + " on " + listenerAddress.String())
+	ServerLog("Connected with Service: " + service.name + " on " + listenerAddress.String())
 	service.udpConnection = connection
 	server.services = append(server.services, service)
 }
