@@ -15,8 +15,6 @@ Client(s):
 ---------------------------
 
 SEPERATOR RULES:
-
-    Task: "$"
-    Head-Body: ":"
-    Content: ";"
-
+    TASK_SEPERATOR      = "#"
+	HEAD_BODY_SEPERATOR = "$"
+	CONTENT_SEPERATOR   = "%"
