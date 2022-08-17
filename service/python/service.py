@@ -27,8 +27,7 @@ class Service:
 
     def __receive_data(self) -> Tuple[List[bytes], Any]:
         data, address = self.__socket.recvfrom(BUFFER_SIZE)
-        data_arr = data.decode().split(CONTENT_SEPERATOR)
-        data_byte_arr = [each.encode(ENCODING) for each in data_arr]
+        data_byte_arr = [each.encode(ENCODING) for each in data.decode().split(CONTENT_SEPERATOR)]
         self.__service_log("Data received from broker")
         return data_byte_arr, address
 
