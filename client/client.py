@@ -8,7 +8,6 @@ SAMPLE_FILE_CONTENT = """Well, I am the slime from your video\nOozin' along on y
 SAMPLE_BASE = 2
 SAMPLE_POWER = 32
 
-
 class Client:
     def __init__(self) -> None:
         self.__socket = socket.socket(
@@ -44,8 +43,10 @@ class Client:
 
     def run(self) -> None:
         HOST, PORT = "127.0.0.1", 8000
-        self.__send_request_to(HOST, PORT)
-        self.__receive_response()
+        for _ in range(5):
+            self.__send_request_to(HOST, PORT)
+            self.__receive_response()
+            time.sleep(0.5)
         self.__stop()
 
 if __name__ == "__main__":
